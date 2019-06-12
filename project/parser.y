@@ -109,6 +109,7 @@ typedef struct p_type_struct {
 program
   :
   {
+    struct symbol *symbolp;
     position=GLOBAL;
     current_table=global_table=create_table("_global");
     current_offset=&global_offset;
@@ -126,7 +127,7 @@ program
 	generate("%d: push fp", ip++);
 	generate("%d: lda 0, 2(pc)", ip++);
 	generate("%d: push 0", ip++);
-	symbolp = add_symbolp(global_table, "main", FUNCTIONI, VOID_TYPE, 0, 0);
+	symbolp = add_symbol(global_table, "main", FUNCTIONI, VOID_TYPE, 0, 0);
 	generate("%d: ldc pc, %%d", ip++);
 	symbolp->ip[0] = ip - 1;
 	symbolp->ipc = 1;
@@ -204,21 +205,24 @@ num
   : NUM
   {
     $<lval>$.lex = lex;
-	int regi = regi_new();
-	int num = atoi(lex);
-	generate("%d: ldc %d, %d", ip++, regi, num);
-	$<rval>$.regi = regi;
   }
 ;
 
 fun_declaration
   : type_specifier var 
   {
+    struct symbol *symbolp;
     position = ARGUMENT;
     current_table = local_table = create_table($<lval>2.lex);
-    if(find_symbol (global_table, $<lval>2.lex))
+    if(symbolp = find_symbol (global_table, $<lval>2.lex))
     {
-      error("error 12: redefined function \"%s\"", $<lval>2.lex);
+      if (symbolp->kind != FUNCTIONI)
+        error("error 12: redefined function \"%s\"", $<lval>2.lex);
+      else { // 미완성의 함수...
+        current_offset = &local_offset;
+        *current_offset = 0;
+        farg_count = 0;
+      }
     }
     current_offset = &local_offset;
     *current_offset = 0;
@@ -226,11 +230,27 @@ fun_declaration
   }
     LPAR params RPAR
   {
+    struct symbol *symbolp;
+    symbolp = find_symbol(global_table, $<lval>2.lex);
+    if (symbolp->kind == FUNCTIONI) {
+      symbolp->kind = FUNCTION;
+      symbolp->type = $<tval>1.type;
+      symbolp->offset = ip;
+      position=LOCAL;
+    }
     add_symbol (global_table, $<lval>2.lex, FUNCTION, $<tval>1.type, farg_count, ip);
     position=LOCAL;
   }
-    LBRACE local_declarations statement_list RBRACE
+    LBRACE local_declarations
+  {
+    generate("%d: lda sp, -%d(sp)", ip++, *current_offset - farg_count);
+  }
+    statement_list RBRACE
   { 
+    generate("%d: ldc %d, 0", ip++, REGI_RETURN);
+    generate("%d: lda sp, 0(fp)", ip++);
+    generate("%d: ld fp, 0(fp)", ip++);
+    generate("%d: ld pc, -1(sp)", ip++);
     print_table(current_table);
     free_table(current_table);
     current_table = global_table;
@@ -332,9 +352,10 @@ expression
 	  $<rval>$.regi = $<rval>3.regi;
 	} else {
       int offset = symbolp->offset;
-	  generate("%d: st %d, -d(fp)", ip++, $<rval>3.regi, offset + 2);
+	  generate("%d: st %d, -%d(fp)", ip++, $<rval>3.regi, offset + 2);
 	  $<rval>$.regi = $<rval>3.regi;
 	}
+    regi_free($<rval>3.regi);
   }
   | var LBRACKET expression RBRACKET ASSIGN expression
   {
@@ -349,33 +370,74 @@ expression
 	  int regi = regi_new();
 	  int offset = symbolp->offset;
 	  generate("%d: add %d, fp, %d", ip++, regi, $<rval>3.regi);  // 확실하지 않음
-	  generate("%d: st %d, -%d(gp)", ip++, regi, offset);
-	  $<rval>$.regi = $<rval>3.regi;
-	  regi_free($<rval>3.regi);
+      regi_free($<rval>3.regi);
+	  generate("%d: st %d, -%d(%d)", ip++, $<rval>6.regi, offset, regi);
+	  
+      regi_free(regi);
+      regi_free($<rval>6.regi);
 	} else {
 	  int regi = regi_new();
 	  int offset = symbolp->offset;
 	  generate("%d: add %d, fp, %d", ip++, regi, $<rval>3.regi);  // 확실하지 않음
-	  generate("%d: st %d, -%d(fp)", ip++, regi, offset + 2);
-	  $<rval>$.regi = $<rval>3.regi;
-	  regi_free($<rval>3.regi);
+      regi_free($<rval>3.regi);
+	  generate("%d: st %d, -%d(%d)", ip++, $<rval>6.regi, offset + 2, regi);
+      regi_free(regi);
+      regi_free($<rval>6.regi);
 	}
   }
   | simple_expression
 ;
 
 simple_expression
-  : additive_expression relop additive_expression
+  : additive_expression LT additive_expression
+  {
+    int regi = regi_new();
+    generate("%d: lt %d, %d, %d", ip++, regi, $<rval>1.regi, $<rval>3.regi);
+    regi_free($<rval>1.regi);
+    regi_free($<rval>3.regi);
+    $<rval>$.regi = regi;
+  }
+  | additive_expression LE additive_expression
+  {
+    int regi = regi_new();
+    generate("%d: le %d, %d, %d", ip++, regi, $<rval>1.regi, $<rval>3.regi);
+    regi_free($<rval>1.regi);
+    regi_free($<rval>3.regi);
+    $<rval>$.regi = regi;
+  }
+  | additive_expression GT additive_expression
+  {
+    int regi = regi_new();
+    generate("%d: gt %d, %d, %d", ip++, regi, $<rval>1.regi, $<rval>3.regi);
+    regi_free($<rval>1.regi);
+    regi_free($<rval>3.regi);
+    $<rval>$.regi = regi;
+  }
+  | additive_expression GE additive_expression
+  {
+    int regi = regi_new();
+    generate("%d: ge %d, %d, %d", ip++, regi, $<rval>1.regi, $<rval>3.regi);
+    regi_free($<rval>1.regi);
+    regi_free($<rval>3.regi);
+    $<rval>$.regi = regi;
+  }
+  | additive_expression EQ additive_expression
+  {
+    int regi = regi_new();
+    generate("%d: eq %d, %d, %d", ip++, regi, $<rval>1.regi, $<rval>3.regi);
+    regi_free($<rval>1.regi);
+    regi_free($<rval>3.regi);
+    $<rval>$.regi = regi;
+  }
+  | additive_expression NE additive_expression
+  {
+    int regi = regi_new();
+    generate("%d: ne %d, %d, %d", ip++, regi, $<rval>1.regi, $<rval>3.regi);
+    regi_free($<rval>1.regi);
+    regi_free($<rval>3.regi);
+    $<rval>$.regi = regi;
+  }
   | additive_expression
-;
-
-relop
-  : LT
-  | LE
-  | GT
-  | GE
-  | EQ
-  | NE
 ;
 
 additive_expression
@@ -446,6 +508,7 @@ factor
 	  else
 		generate("%d: ld %d, -%d(fp)", ip++, regi, offset + 2);
 	  $<rval>$.regi = regi;
+    }
   }
   | var LBRACKET expression RBRACKET
   {
@@ -476,15 +539,25 @@ factor
   }
   | num
   {
-	$<rval>$.regi = $<rval>1.regi;
+    int regi = regi_new();
+    int num = atoi($<lval>1.lex);
+	generate("%d: ldc %d, %d", ip++, regi, num);
+	$<rval>$.regi = regi;
+    
   }
   | PLUS num
   {
-	$<rval>$.regi = $<rval>1.regi;
+    int regi = regi_new();
+    int num = atoi($<lval>2.lex);
+	generate("%d: ldc %d, %d", ip++, regi, num);
+	$<rval>$.regi = regi;
   }
   | MINUS num
   {
-	$<rval>$.regi = $<rval>1.regi * (-1);
+    int regi = regi_new();
+    int num = atoi($<lval>2.lex);
+	generate("%d: ldc %d, -%d", ip++, regi, num);
+	$<rval>$.regi = regi;
   }
 ;
 
@@ -574,7 +647,7 @@ call
       error("error 40: %d  %d  wrong no argument function \"%s\"", aarg_count ,symbolp->size,$<lval>1.lex);
     generate("%d: st fp, -%d(fp)", ip++, *current_offset +2);
     generate("%d: lda fp, -%d(fp)", ip++, *current_offset +2);
-    regi = regi_new();
+    int regi = regi_new();
     generate("%d: lda %d, 2(pc)", ip++, regi);
     generate("%d: st %d, -1(fp)", ip++, regi);
     regi_free(regi);
@@ -585,9 +658,9 @@ call
       symbolp->ip[symbolp->ipc] = ip-1;
       symbolp->ipc = symbolp ->ipc+1;
     }
-  regi = regi_new();
-  generate ("%d: lda %d, 0(%d)", ip++, regi, REGI_RETURN);
-  $<rval>$.regi = regi;
+    regi = regi_new();
+    generate ("%d: lda %d, 0(%d)", ip++, regi, REGI_RETURN);
+    $<rval>$.regi = regi;
   }
 ;
 
