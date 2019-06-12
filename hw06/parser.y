@@ -265,7 +265,7 @@ expression
     symbolp = lookup_symbol(var);
     if (symbolp == NULL)
       error("error 20: undefined variable \"%s\"", var);
-    else if(symbolp->kind != GLOBAL || symbolp->kind !=  FUNCTION || symbolp->kind != FUNCTIONI || symbolp->kind != ARGUMENT)
+    else if(symbolp->kind ==  FUNCTION || symbolp->kind == FUNCTIONI)
       error("error 30: type error variable \"%s\"", var);
   }
   | var LBRACKET expression RBRACKET ASSIGN expression
@@ -275,7 +275,7 @@ expression
     symbolp = lookup_symbol(var);
     if(symbolp == NULL)
       error("error 21: undefined array \"%s\"", var);
-    else if(symbolp->type != INT_ARRAY_TYPE)
+    else if(symbolp->type == INT_TYPE || symbolp->type == VOID_TYPE)
       error("error 31: type error array \"%s\"", var);
   }
   | simple_expression
@@ -360,20 +360,17 @@ call
     if(symbolp == NULL)
     {
       error("error 22: undefined function call \"%s\"", $<lval>1.lex);
-      aarg_count = 0;
     }
     if(symbolp->kind != (FUNCTION))
       error("error 32: type error function \"%s\"", $<lval>1.lex);
+    aarg_count = 0;
   }
     LPAR args RPAR
   {
-    if(!lookup_symbol($<lval>1.lex) == NULL)
-    {
-      struct symbol *symbolp;
-      symbolp = lookup_symbol($<lval>1.lex);
-      if(symbolp->size != aarg_count)
-        error("error 40: wrong no argument function \"%s\"", $<lval>1.lex);
-    }
+    struct symbol *symbolp;
+    symbolp = lookup_symbol($<lval>1.lex);
+    if(symbolp->size != aarg_count)
+      error("error 40: %d  %d  wrong no argument function \"%s\"", aarg_count ,symbolp->size,$<lval>1.lex);
   }
 ;
 
@@ -384,7 +381,13 @@ args
 
 arg_list
   : arg_list COMMA expression
+  {
+    aarg_count++;
+  }
   | expression
+  {
+    aarg_count = 1;
+  } 
 ;
 
 return_stmt
