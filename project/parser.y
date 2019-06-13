@@ -231,14 +231,14 @@ fun_declaration
     LPAR params RPAR
   {
     struct symbol *symbolp;
-    symbolp = find_symbol(global_table, $<lval>2.lex);
-    if (symbolp->kind == FUNCTIONI) {
+    if((symbolp = find_symbol(global_table, $<lval>2.lex)) == NULL) {
+      add_symbol (global_table, $<lval>2.lex, FUNCTION, $<tval>1.type, farg_count, ip);
+}
+    else if (symbolp->kind == FUNCTIONI) {
       symbolp->kind = FUNCTION;
       symbolp->type = $<tval>1.type;
       symbolp->offset = ip;
-      position=LOCAL;
     }
-    add_symbol (global_table, $<lval>2.lex, FUNCTION, $<tval>1.type, farg_count, ip);
     position=LOCAL;
   }
     LBRACE local_declarations
@@ -267,6 +267,7 @@ params
 param_list
   : param_list COMMA param
   {
+
     farg_count++;
   }
   | param
@@ -723,8 +724,6 @@ input_stmt
     char *var = $<lval>2.lex;
     struct symbol *symbolp;
     symbolp = lookup_symbol(var);
-    //////////////////////////////////보통 이런곳에 에러...
-
     if(symbolp == NULL)
       error("error ??: input error");
     if (symbolp->kind == GLOBAL) {
