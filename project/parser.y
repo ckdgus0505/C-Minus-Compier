@@ -190,7 +190,7 @@ type_specifier
   }
   | VOID
   {
-    $<tval>$.type = VOID_TYPE;  // 내가 임의로 넣음
+    $<tval>$.type = VOID_TYPE;
   }
 ;
 
@@ -333,6 +333,9 @@ compound_stmt
 
 expression_stmt
   : expression SEMICOLON
+  {
+    regi_free($<rval>1.regi);
+  }
   | SEMICOLON
 ;
 
@@ -369,7 +372,7 @@ expression
     if(symbolp->kind == GLOBAL) {
 	  int regi = regi_new();
 	  int offset = symbolp->offset;
-	  generate("%d: add %d, fp, %d", ip++, regi, $<rval>3.regi);  // 확실하지 않음
+	  generate("%d: add %d, gp, %d", ip++, regi, $<rval>3.regi);
       regi_free($<rval>3.regi);
 	  generate("%d: st %d, -%d(%d)", ip++, $<rval>6.regi, offset, regi);
 	  
@@ -378,7 +381,7 @@ expression
 	} else {
 	  int regi = regi_new();
 	  int offset = symbolp->offset;
-	  generate("%d: add %d, fp, %d", ip++, regi, $<rval>3.regi);  // 확실하지 않음
+	  generate("%d: add %d, fp, %d", ip++, regi, $<rval>3.regi);
       regi_free($<rval>3.regi);
 	  generate("%d: st %d, -%d(%d)", ip++, $<rval>6.regi, offset + 2, regi);
       regi_free(regi);
@@ -386,6 +389,9 @@ expression
 	}
   }
   | simple_expression
+  {
+    $<rval>$.regi = $<rval>1.regi;  
+  }
 ;
 
 simple_expression
@@ -438,6 +444,9 @@ simple_expression
     $<rval>$.regi = regi;
   }
   | additive_expression
+  {
+    $<rval>$.regi = $<rval>1.regi;
+  }
 ;
 
 additive_expression
@@ -458,6 +467,9 @@ additive_expression
     $<rval>$.regi = regi;  
   }
   | term
+  {
+    $<rval>$.regi = $<rval>1.regi;
+  }
 ;
 
 term
@@ -478,6 +490,9 @@ term
     $<rval>$.regi = regi;
   }
   | factor
+  {
+    $<rval>$.regi = $<rval>1.regi;
+  }
 ;
 
 factor
@@ -732,8 +747,6 @@ input_stmt
     char *var = $<lval>2.lex;
     struct symbol *symbolp;
     symbolp = lookup_symbol(var);
-    //////////////////////////////////보통 이런곳에 에러...
-
     if(symbolp == NULL)
       error("error ??: input arr error");
     if (symbolp->kind == GLOBAL) {
@@ -742,7 +755,8 @@ input_stmt
       int offset = symbolp->offset;
       generate("%d: in %d", ip++, regi1);
       generate("%d: add %d, gp, %d", ip++, regi2, $<rval>4.regi);
-      generate("%d: st %d, -%d(gp)", ip++, regi1, regi2);
+      regi_free($<rval>4.regi);
+      generate("%d: st %d, -%d(%d)", ip++, regi1, offset, regi2);
       regi_free(regi1);
       regi_free(regi2);
     }
@@ -751,8 +765,9 @@ input_stmt
       int regi2 = regi_new();
       int offset = symbolp->offset;
       generate("%d: in %d", ip++, regi1);
-      generate("%d: add %d, gp, %d", ip++, regi2, $<rval>4.regi); 
-      generate("%d: st %d, -%d(fp)", ip++, regi1, regi2);
+      generate("%d: add %d, fp, %d", ip++, regi2, $<rval>4.regi); 
+      regi_free($<rval>4.regi);
+      generate("%d: st %d, -%d(%d)", ip++, regi1, offset + 2, regi2);
       regi_free(regi1);
       regi_free(regi2);
     }
