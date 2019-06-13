@@ -602,7 +602,7 @@ if_rpar
 ;
 
 if_else
-  : ELSE
+  :
   {
     $<pval>$.ip = ip;
   }
@@ -617,7 +617,7 @@ iteration_stmt
     while_rpar statement
   {
     generate("%d: ldc pc, %d", ip++, $<pval>2.ip);
-    backpatch($<pval>5.ip-1, ip - $<pval>5.ip);
+    backpatch($<pval>5.ip-1, ip - $<pval>2.ip);  /////////////////////// 백패칭 계산 잘 해보
   }
 ;
 
