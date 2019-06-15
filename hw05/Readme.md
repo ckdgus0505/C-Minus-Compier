@@ -18,3 +18,10 @@
   
 - 생성 파일
   * scanner.l, parser.y
+
+-------------------------------------
+
+C-minus Syntactic-Rules
+
+
+![02-Syntactic-Rules.png](./02-Syntactic-Rules.png)

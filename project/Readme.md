@@ -18,3 +18,10 @@
   
 - 생성 파일
   * scanner.l, parser.y, , symbol.c
+  
+-------------------------------------
+
+Tiny-machine Instructions
+
+
+![03-Machine-Instructions.png](./03-Machine-Instructions.png)

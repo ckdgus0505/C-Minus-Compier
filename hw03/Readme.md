@@ -18,3 +18,10 @@
   
 - 생성 파일
   * scanner.l
+  
+-------------------------------------
+
+C-minus Lexical-Rules
+
+
+![01-Lexical_Rules.png](./01-Lexical_Rules.png)

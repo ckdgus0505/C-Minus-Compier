@@ -27,21 +27,16 @@
   
 - 타겟 머신
   * 타이니 머신
-  -------------------------------------
+-------------------------------------
 
-C-minus Lexical-Rules
-
-
-![01-Lexical_Rules.png](./01-Lexical_Rules.png)
+Input File
+[sort.c](./sort.c)
 
 
-C-minus Syntactic-Rules
+Output File
+[sort.tm](./sort.tm.txt)
 
 
-![02-Syntactic-Rules.png](./02-Syntactic-Rules.png)
+Execution Result
 
-
-Tiny-machine Instructions
-
-
-![03-Machine-Instructions.png](./03-Machine-Instructions.png)
+![sort.png](./sort.png)
