@@ -537,10 +537,6 @@ factor
       else
         generate("%d: ld %d, -%d(gp)", ip++, regi, symbolp->offset);
       $<rval>$.regi = regi;
-    } else if(symbolp->type == ARGUMENT) { // argument
-      int regi = regi_new();
-      generate("%d: ld %d, -%d(fp)", ip++, regi, symbolp->offset + 2);
-      $<rval>$.regi = regi;
     } else { // local
       int regi = regi_new();
       if(symbolp->type == INT_ARRAY_TYPE)
@@ -670,10 +666,7 @@ funcall_stmt
     if(symbolp->kind == GLOBAL)
       generate("%d: st %d, -%d(gp)", ip++, $<rval>3.regi, symbolp->offset);
     else { // local 일때
-      if(symbolp->type == INT_P_TYPE) {
-      } else {
-        generate("%d: st %d, -%d(fp)", ip++, $<rval>3.regi, symbolp->offset + 2);
-      }
+      generate("%d: st %d, -%d(fp)", ip++, $<rval>3.regi, symbolp->offset + 2);
     }
     regi_free($<rval>3.regi);
   }
@@ -685,7 +678,7 @@ funcall_stmt
     if(symbolp->kind == GLOBAL) {
       int regi = regi_new();
       generate("%d: add %d, gp, %d)", ip++, regi, $<rval>3.regi);
-      generate("%d: st %d, -%d(%d)", ip++, $<rval>3.regi, symbolp->offset, regi);
+      generate("%d: st %d, -%d(%d)", ip++, $<rval>6.regi, symbolp->offset, regi);
       regi_free(regi);
       regi_free($<rval>3.regi);
     } else { // local 일때
