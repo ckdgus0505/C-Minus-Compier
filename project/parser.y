@@ -217,7 +217,7 @@ num
 fun_declaration
   : type_specifier var
   {
-    rc = 0; ///////////////////rc
+    rc = 0; 
     current_fun_name = $<lval>2.lex;
     generate("// ====================", rp++);
     generate("// %s()", current_fun_name, rp++);
@@ -687,7 +687,7 @@ funcall_stmt
       int regi2 = regi_new();
       generate("%d: ld %d, -%d(fp)", ip++, regi1, symbolp->offset + 2);
       generate("%d: add %d, %d, %d", ip++, regi2, regi1, $<rval>3.regi); // var의 주소
-      generate("%d: st %d, %d(%d)", ip++, regi1, symbolp->offset + 2, regi2);
+      generate("%d: st %d, %d(%d)", ip++, $<rval>6.regi, symbolp->offset + 2, regi2);
       $<rval>$.regi = regi1;
       regi_free($<rval>3.regi);
       regi_free(regi1);
@@ -696,7 +696,7 @@ funcall_stmt
         int regi = regi_new();
         generate("%d: add %d, fp, %d", ip++, regi, $<rval>3.regi);
         regi_free($<rval>3.regi);
-        generate("%d: st %d, -%d(%d)", ip++, $<rval>3.regi, symbolp->offset + 2, regi);
+        generate("%d: st %d, -%d(%d)", ip++, $<rval>6.regi, symbolp->offset + 2, regi);
         regi_free(regi);
       }
     }
