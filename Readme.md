@@ -30,8 +30,18 @@
   -------------------------------------
 
 C-minus Lexical-Rules
+
+
 ![01-Lexical_Rules.png](./01-Lexical_Rules.png)
+
+
 C-minus Syntactic-Rules
+
+
 ![02-Syntactic-Rules.png](./02-Syntactic-Rules.png)
+
+
 Tiny-machine Instructions
+
+
 ![03-Machine-Instructions.png](./03-Machine-Instructions.png)
