@@ -219,9 +219,9 @@ fun_declaration
   {
     rc = 0; 
     current_fun_name = $<lval>2.lex;
-    generate("// ====================", rp++);
-    generate("// %s()", current_fun_name, rp++);
-    generate("// ====================", rp++);
+    remark("// ====================");
+    remark("// %s()", current_fun_name);
+    remark("// ====================");
 
     struct symbol *symbolp;
     position = ARGUMENT;
